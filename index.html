@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feature Parity</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f6f6f8;--sf:#fff;--sf2:#f1f1f5;--line:#e8e8ee;--ink:#0f1222;--mute:#6b7080;--ok:#1faa73;--okbg:#e3f6ee;--no:#ef5b4c;--nobg:#fdebe9;--amb:#f0a030;--vio:#8b5cf6;--btn:#0f1222;--btnink:#fff}
+@media(prefers-color-scheme:dark){:root{--bg:#0d0f18;--sf:#151824;--sf2:#1c2030;--line:#262b3d;--ink:#f1f2f7;--mute:#8d93a8;--okbg:#10382b;--nobg:#3b1b1b;--btn:#f1f2f7;--btnink:#0f1222}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.hide{display:none!important}
+h1,h2,p{margin:0}
+.logo{display:inline-flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-.01em}
+.logo i{width:22px;height:22px;border-radius:7px;background:linear-gradient(90deg,var(--ink) 50%,var(--ok) 50%);display:inline-block}
+.btn{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:13.5px}
+.btn:hover{border-color:var(--mute)}
+.btn.dark{background:var(--btn);color:var(--btnink);border-color:var(--btn)}
+/* landing */
+#landing{min-height:100vh;display:grid;place-items:center;padding:28px}
+.land{width:100%;max-width:460px;text-align:center}
+.land .logo{margin-bottom:28px}
+.land h1{font-size:34px;line-height:1.15;font-weight:700;letter-spacing:-.025em;margin-bottom:10px}
+.land p.s{color:var(--mute);margin-bottom:26px}
+#drop{border:1.5px dashed var(--line);background:var(--sf);border-radius:16px;padding:38px 20px;cursor:pointer;transition:.15s}
+#drop:hover,#drop.over{border-color:var(--ink)}
+#drop b{display:block;font-weight:600}#drop span{color:var(--mute);font-size:13.5px}
+.tiny{font-size:13px;color:var(--mute);margin-top:14px}
+.tiny button{background:none;border:0;padding:0;color:var(--ink);text-decoration:underline;cursor:pointer;font-size:13px}
+.err{text-align:left;background:var(--nobg);border:1px solid color-mix(in srgb,var(--no) 35%,transparent);border-radius:14px;padding:14px 16px;margin-top:16px}
+.err b{display:block;margin-bottom:2px}.err p{font-size:14px;color:var(--ink);opacity:.85}
+.fmt{margin-top:14px;text-align:left;background:var(--sf);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:13px}
+.fmt p{color:var(--mute);margin-bottom:8px}
+.fmt table{width:100%;border-collapse:collapse}.fmt th,.fmt td{padding:5px 8px;text-align:left;border-bottom:1px solid var(--line);font-size:12.5px}.fmt th{color:var(--mute);font-weight:600}
+/* dashboard */
+.nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nav .sp{flex:1}
+.file{font-size:13px;color:var(--mute);background:var(--sf2);border-radius:99px;padding:5px 12px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+main{max-width:1080px;margin:0 auto;padding:28px 20px 70px}
+.warn{background:var(--nobg);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:14px}
+.hero{display:flex;gap:32px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+.hero h1{font-size:clamp(28px,4.4vw,46px);line-height:1.08;font-weight:700;letter-spacing:-.03em;max-width:620px}
+.hero p{color:var(--mute);margin-top:10px;font-size:16px;max-width:560px}
+.rings{display:flex;gap:22px;flex-wrap:wrap}
+.ring{display:flex;align-items:center;gap:12px}
+.ring svg{width:64px;height:64px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:7;stroke-linecap:round}
+.ring .t{stroke:var(--sf2)}.ring .p{stroke:var(--ink)}
+.ring b{display:block;font-size:22px;line-height:1.1;letter-spacing:-.02em}.ring span{font-size:13px;color:var(--mute)}
+.card{background:var(--sf);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px}
+.card h2{font-size:15px;font-weight:600}.card .sub{font-size:13px;color:var(--mute);margin:2px 0 14px}
+.seg{display:flex;gap:3px;height:16px;margin:14px 0 16px}
+.seg button{border:0;padding:0;cursor:pointer;border-radius:8px;min-width:8px;transition:opacity .15s}
+.seg button:hover{opacity:.8}
+.leg{display:flex;gap:10px;flex-wrap:wrap}
+.leg button{display:flex;gap:8px;align-items:center;background:var(--sf2);border:1px solid transparent;border-radius:10px;padding:7px 12px;cursor:pointer;font-size:13.5px}
+.leg button.act{border-color:var(--ink)}
+.leg i{width:9px;height:9px;border-radius:50%}.leg b{font-weight:700}
+.gl{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:4px 28px}
+.g{display:grid;grid-template-columns:1fr auto;gap:2px 12px;background:none;border:0;border-radius:10px;padding:9px 10px;text-align:left;cursor:pointer}
+.g:hover,.g.act{background:var(--sf2)}
+.g .n{font-weight:600;font-size:14px}.g .n small{color:var(--mute);font-weight:400;margin-left:6px;font-size:12.5px}
+.g .c{font-size:13px;color:var(--mute)}
+.g .bar{grid-column:1/-1;height:5px;border-radius:3px;background:var(--okbg);overflow:hidden}.g .bar i{display:block;height:100%;background:var(--no);border-radius:3px}
+.bar2{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:26px 0 12px}
+.tabs{display:flex;gap:4px;background:var(--sf2);padding:4px;border-radius:12px;flex-wrap:wrap}
+.tabs button{border:0;background:none;padding:7px 13px;border-radius:9px;cursor:pointer;font-weight:600;font-size:13.5px;color:var(--mute)}
+.tabs button.act{background:var(--sf);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tabs button span{margin-left:6px;font-weight:500;opacity:.7}
+.sp{flex:1}
+.srch{position:relative;flex:1;min-width:220px;max-width:340px}
+.srch svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--mute);fill:none;stroke-width:2}
+.srch input{width:100%;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:9px 12px 9px 36px}
+select.btn{padding:8px 10px}
+.tbw{background:var(--sf);border:1px solid var(--line);border-radius:18px;overflow:auto;max-height:70vh}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:560px}
+th,td{padding:12px 18px;text-align:left;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{position:sticky;top:0;background:var(--sf);font-size:12.5px;font-weight:600;color:var(--mute);z-index:1}
+tbody tr:hover td{background:var(--sf2)}
+.fn{font-weight:600}.fn small{display:block;color:var(--mute);font-weight:400;font-size:12.5px}
+.w{color:var(--mute);font-size:13.5px}
+.st{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600}
+.st::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mute)}
+.st.y::before{background:var(--ok)}.st.n{color:var(--no)}.st.n::before{background:var(--no)}
+mark{background:#ffe58a;color:#111;border-radius:3px;padding:0 1px}
+.cnt{font-size:13px;color:var(--mute);margin:10px 4px}
+.empty{padding:34px;text-align:center;color:var(--mute)}
+
+.state{min-height:100vh;display:grid;place-items:center;padding:28px}
+.acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:6px}
+.spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--ink);border-radius:50%;margin:0 auto 14px;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
+</style>
+</head>
+<body>
+
+<section id="loading" class="state"><div class="land"><div class="spin" aria-hidden="true"></div><p class="s">Loading latest feature list…</p></div></section>
+
+<section id="problem" class="state hide"><div class="land">
+  <div class="logo"><i></i><span class="ttl"></span></div>
+  <h1 id="pt"></h1><p class="s" id="pm"></p>
+  <div class="acts"><button class="btn dark" id="retry">Try again</button><button class="btn" id="pick">Open a file from my computer</button>
+    <input id="file" type="file" accept=".xlsx,.xls,.csv" class="hide"></div>
+  <div id="fmt" class="fmt hide"><p>The sheet should look like this. Each platform is a column with Yes or No.</p>
+    <table><tr><th>Mode</th><th>Section</th><th>Feature</th><th>WEB</th><th>Android</th></tr>
+    <tr><td>Teach</td><td>Pen</td><td>Draw</td><td>Yes</td><td>Yes</td></tr>
+    <tr><td>Teach</td><td>User</td><td>Dark mode</td><td>Yes</td><td>No</td></tr></table></div>
+</div></section>
+
+<div id="dash" class="hide">
+  <div class="nav"><div class="in"><span class="logo"><i></i><span class="ttl"></span></span><span class="file" id="fname"></span><span class="sp"></span>
+    <select id="sheet" class="btn hide" aria-label="Sheet"></select>
+    <button class="btn" id="refresh">Refresh data</button></div></div>
+  <main>
+    <div id="warn" class="warn hide" role="alert"></div>
+    <section class="hero"><div><h1 id="head"></h1><p id="sub"></p></div><div class="rings" id="rings"></div></section>
+    <section class="card"><h2>Feature breakdown</h2><div class="sub" id="bsub"></div>
+      <div class="seg" id="seg"></div><div class="leg" id="leg"></div></section>
+    <section class="card hide" id="gcard"><h2>Where the gaps are</h2><div class="sub">Sections with missing features. Select one to filter the list.</div><div class="gl" id="gaps"></div></section>
+    <div class="bar2"><div class="tabs" id="tabs"></div><span class="sp"></span>
+      <div class="srch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input type="search" id="q" placeholder="Search features" aria-label="Search features"></div>
+      <select id="mode" class="btn" aria-label="Mode"></select>
+      <button class="btn dark" id="csv">Download CSV</button></div>
+    <div class="tbw"><table id="tbl"></table></div><div class="cnt" id="cnt"></div>
+  </main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const YES=/^(yes|y|true|✓|✔|available)$/i,NO=/^(no|n|false|✗|✘|x|not available)$/i;
+let wb,fname='',stamp=null,D=null,f='all',sec=null,curSheet='';
+
+/* ---- settings: change these two lines if you rename things ---- */
+const CONFIG={file:'CEP_-_Global_Feature_List.xlsx',title:'CEP Feature Parity'};
+
+document.title=CONFIG.title;
+document.querySelectorAll('.ttl').forEach(e=>e.textContent=CONFIG.title);
+const show=id=>['loading','problem','dash'].forEach(x=>$(x).classList.toggle('hide',x!==id));
+function problem(t,m,showFmt){$('pt').textContent=t;$('pm').textContent=m;$('fmt').classList.toggle('hide',!showFmt);show('problem')}
+
+/* ---- load the Excel that lives next to this page ---- */
+async function loadData(){
+  show('loading');
+  let res;
+  try{res=await fetch(encodeURI(CONFIG.file)+'?t='+Date.now(),{cache:'no-store'})}
+  catch(e){
+    return problem('We couldn’t load the data file',location.protocol==='file:'
+      ?'This page was opened directly from a folder, so the browser blocks reading the Excel file. Open it from your GitHub Pages link instead, or use the button below to pick the file manually.'
+      :'Please check your internet connection and try again.');
+  }
+  if(res.status===404)return problem('Data file not found',`We looked for “${CONFIG.file}” in the same folder as this page. Make sure the file is uploaded with exactly that name, or update the file name in the CONFIG line of index.html.`);
+  if(!res.ok)return problem('We couldn’t load the data file',`The server replied with an error (${res.status}). Please try again in a moment.`);
+  const lm=res.headers.get('Last-Modified');
+  process(await res.arrayBuffer(),CONFIG.file,lm?new Date(lm):null);
+}
+
+/* ---- manual fallback (useful for local preview) ---- */
+$('pick').onclick=()=>$('file').click();
+$('file').onchange=e=>{
+  const fl=e.target.files[0];if(!fl)return;
+  const r=new FileReader();r.onload=x=>process(x.target.result,fl.name,fl.lastModified?new Date(fl.lastModified):null);
+  r.onerror=()=>problem('We couldn’t read this file','Please try again or choose a different file.');r.readAsArrayBuffer(fl);e.target.value='';
+};
+$('retry').onclick=loadData;$('refresh').onclick=loadData;
+
+function process(buf,name,when){
+  if(typeof XLSX==='undefined')return problem('The Excel reader didn’t load','Check your internet connection and refresh the page.');
+  try{wb=XLSX.read(buf,{type:'array'})}
+  catch(x){return problem('We couldn’t open the data file','It may be damaged or password protected. Re-save it as .xlsx and upload it again.')}
+  fname=name;stamp=when;
+  let first=null;
+  for(const n of wb.SheetNames){const res=parse(n);if(res.D){start(n,res.D);return}first=first||res}
+  const x=first||{err:'empty'},many=wb.SheetNames.length>1?` We checked all ${wb.SheetNames.length} sheets.`:'';
+  if(x.err==='noPlat')problem('This doesn’t look like a feature comparison sheet',`We look for columns that contain Yes / No values, one per platform. The columns we found were: ${x.cols.slice(0,6).join(', ')||'none'}${x.cols.length>6?'…':''}, and none of them hold Yes / No values.${many}`,true);
+  else if(x.err==='noName')problem('Feature names are missing','We found Yes / No columns, but no column with feature names. Add a column such as “Feature” and try again.',true);
+  else problem('The data sheet looks empty','We need a header row and at least one feature row.'+many,true);
+}
+function parse(name){
+  const aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''}).filter(r=>r.some(v=>String(v).trim()!==''));
+  const res=build(aoa);return res.err?res:{D:res};
+}
+function start(name,d){
+  D=d;curSheet=name;f='all';sec=null;$('q').value='';$('warn').classList.add('hide');
+  $('sheet').innerHTML=wb.SheetNames.map(n=>`<option ${n===name?'selected':''}>${esc(n)}</option>`).join('');
+  $('sheet').classList.toggle('hide',wb.SheetNames.length<2);
+  $('fname').textContent=stamp&&!isNaN(stamp)?`Updated ${stamp.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`:fname;
+  $('fname').title=fname;
+  $('mode').innerHTML='<option value="">All modes</option>'+D.modes.map(m=>`<option>${esc(m)}</option>`).join('');
+  show('dash');window.scrollTo(0,0);render();
+}
+$('sheet').onchange=e=>{
+  const res=parse(e.target.value);
+  if(res.D)start(e.target.value,res.D);
+  else{$('sheet').value=curSheet;const w=$('warn');w.textContent=`The sheet “${e.target.value}” has no Yes / No columns, so it can’t be compared.`;w.classList.remove('hide')}
+};
+
+/* ---- parse hierarchy (handles merged / blank cells) ---- */
+function build(aoa){
+  if(aoa.length<2)return {err:'empty'};
+  const h=aoa[0].map(x=>String(x).trim()),body=aoa.slice(1);
+  const isP=c=>{const v=body.map(r=>String(r[c]??'').trim()).filter(Boolean);return v.length&&v.filter(x=>YES.test(x)||NO.test(x)).length>=v.length*.8};
+  const pc=h.map((_,c)=>c).filter(isP),dc=h.map((_,c)=>c).filter(c=>!pc.includes(c)&&h.length);
+  if(!pc.length)return {err:'noPlat',cols:h.filter(Boolean)};
+  if(!dc.length)return {err:'noName'};
+  const n=dc.length,cur=Array(n).fill(''),items=[];
+  body.forEach(r=>{
+    const v=dc.map(c=>String(r[c]??'').trim());
+    let mode,section,name,ctx=[];
+    if(n===1){mode='All';section='General';name=v[0]}
+    else if(v[0]&&v.slice(1).every(x=>!x)){mode=cur[0]||'General';section='General';name=v[0]}
+    else{
+      const f=v.findIndex(x=>x);
+      if(f>=0)for(let i=f;i<n;i++)cur[i]=v[i];
+      const p=[...cur.slice(0,n-1),v[n-1]].map(x=>x==='-'?'':x);
+      let k=p.length-1;while(k>0&&!p[k])k--;
+      name=p[k];ctx=p.slice(2,k).filter(Boolean);mode=p[0]||'General';section=k<=1?'General':p[1];
+    }
+    if(!name)return;
+    const s=pc.map(c=>{const x=String(r[c]??'').trim();return YES.test(x)?true:NO.test(x)?false:null});
+    items.push({mode,section,name,ctx:ctx.join(' › '),s,key:mode+'|'+section});
+  });
+  if(!items.length)return {err:'empty'};
+  return {plats:pc.map(c=>h[c]||('Column '+(c+1))),items,modes:[...new Set(items.map(i=>i.mode))]};
+}
+
+
+/* ---- render ---- */
+const gap=i=>i.s.some(x=>x===false);
+const sk=i=>i.s.map((x,j)=>x===false?j:'').filter(x=>x!=='').join(',');
+function match(i,k){
+  if(k==='all')return true;if(k==='ok')return !gap(i);
+  if(k.startsWith('set:'))return sk(i)===k.slice(4);
+  return i.s[+k.slice(4)]===false;
+}
+function render(){
+  const {plats,items}=D,T=items.length;
+  const has=plats.map((_,j)=>items.filter(i=>i.s[j]===true).length),miss=plats.map((_,j)=>items.filter(i=>i.s[j]===false).length);
+  const ok=items.filter(i=>!gap(i)).length,li=miss.indexOf(Math.max(...miss));
+  // hero
+  $('head').textContent=ok===T?'Everything is in sync':`${plats[li]} is missing ${miss[li]} feature${miss[li]>1?'s':''}`;
+  $('sub').textContent=ok===T?`All ${T} features are available on every platform.`
+    :`${ok} of ${T} features (${Math.round(ok/T*100)}%) are on every platform.`+(plats.length>1?' '+plats.map((p,j)=>j===li?'':miss[j]?`${p} is missing ${miss[j]}.`:`${p} has all of them.`).filter(Boolean).join(' '):'');
+  $('rings').innerHTML=plats.map((p,j)=>{const pc=has[j]/T,C=2*Math.PI*28;return `<div class="ring"><svg viewBox="0 0 64 64"><circle class="t" cx="32" cy="32" r="28"/><circle class="p" cx="32" cy="32" r="28" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pc)}"/></svg><div><b>${Math.round(pc*100)}%</b><span>${esc(p)} · ${has[j]} of ${T}</span></div></div>`}).join('');
+  // breakdown
+  const cols=['#ef5b4c','#f0a030','#8b5cf6','#3b82f6'],S=[{k:'ok',label:'On every platform',n:ok,c:'var(--ok)'}],M={};
+  items.filter(gap).forEach(i=>{const k=sk(i);M[k]=(M[k]||0)+1});
+  Object.keys(M).sort((a,b)=>M[b]-M[a]).forEach((k,x)=>S.push({k:'set:'+k,label:'Missing on '+k.split(',').map(j=>plats[+j]).join(' & '),n:M[k],c:cols[x%4]}));
+  $('bsub').textContent=`${T} features compared. Select a group to filter the list.`;
+  $('seg').innerHTML=S.map(s=>`<button style="flex:${s.n};background:${s.c}" data-f="${s.k}" title="${esc(s.label)}: ${s.n}" aria-label="${esc(s.label)}: ${s.n}"></button>`).join('');
+  $('leg').innerHTML=S.map(s=>`<button class="${f===s.k?'act':''}" data-f="${s.k}"><i style="background:${s.c}"></i>${esc(s.label)} <b>${s.n}</b></button>`).join('');
+  document.querySelectorAll('#seg button,#leg button').forEach(b=>b.onclick=()=>{f=f===b.dataset.f?'all':b.dataset.f;render()});
+  // tabs
+  const TB=[['all','All',T],...plats.map((p,j)=>['miss'+j,'Missing on '+p,miss[j]]),['ok','On every platform',ok]];
+  $('tabs').innerHTML=TB.map(t=>`<button class="${f===t[0]?'act':''}" data-f="${t[0]}">${esc(t[1])}<span>${t[2]}</span></button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{f=b.dataset.f;render()});
+  // gaps by section
+  const G={};items.forEach(i=>{const g=G[i.key]??={key:i.key,mode:i.mode,section:i.section,t:0,g:0};g.t++;if(gap(i))g.g++});
+  const gl=Object.values(G).filter(g=>g.g).sort((a,b)=>b.g-a.g||b.g/b.t-a.g/a.t);
+  $('gcard').classList.toggle('hide',!gl.length);
+  $('gaps').innerHTML=gl.slice(0,8).map(g=>`<button class="g ${sec===g.key?'act':''}" data-k="${esc(g.key)}"><div class="n">${esc(g.section)}<small>${esc(g.mode)}</small></div><div class="c">${g.g} of ${g.t}</div><div class="bar"><i style="width:${g.g/g.t*100}%"></i></div></button>`).join('');
+  $('gaps').querySelectorAll('.g').forEach(b=>b.onclick=()=>{sec=sec===b.dataset.k?null:b.dataset.k;render()});
+  table();
+}
+const mk=(t,q)=>{t=esc(t);if(!q)return t;const e=esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return t.replace(new RegExp(e,'gi'),m=>`<mark>${m}</mark>`)};
+function cur(){
+  const q=$('q').value.trim().toLowerCase(),m=$('mode').value;
+  return D.items.filter(i=>match(i,f)&&(!m||i.mode===m)&&(!sec||i.key===sec)&&(!q||(i.name+' '+i.ctx+' '+i.section+' '+i.mode).toLowerCase().includes(q)));
+}
+function table(){
+  const {plats}=D,q=$('q').value.trim(),rows=cur();
+  $('tbl').innerHTML='<thead><tr><th>Feature</th><th>Location</th>'+plats.map(p=>`<th>${esc(p)}</th>`).join('')+'</tr></thead><tbody>'
+    +(rows.length?rows.map(i=>`<tr><td class="fn">${mk(i.name,q)}${i.ctx?`<small>${esc(i.ctx)}</small>`:''}</td><td class="w">${esc(i.mode)} › ${esc(i.section)}</td>`
+      +i.s.map(x=>`<td><span class="st ${x===true?'y':x===false?'n':''}">${x===true?'Available':x===false?'Missing':'Not set'}</span></td>`).join('')+'</tr>').join('')
+      :`<tr><td colspan="${plats.length+2}" class="empty">No features match your search or filters.</td></tr>`)+'</tbody>';
+  $('cnt').textContent=`Showing ${rows.length} of ${D.items.length} features`;
+}
+$('q').oninput=table;$('mode').onchange=table;
+$('csv').onclick=()=>{
+  const rows=[['Mode','Section','Feature',...D.plats],...cur().map(i=>[i.mode,i.section,(i.ctx?i.ctx+' › ':'')+i.name,...i.s.map(x=>x===true?'Yes':x===false?'No':'')])];
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n')],{type:'text/csv'}));
+  a.download='features.csv';a.click();
+};
+loadData();
+</script>
+</body>
+</html>
