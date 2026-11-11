@@ -324,9 +324,9 @@ function render(){
   const has=plats.map((_,j)=>items.filter(i=>i.s[j]===true).length),miss=plats.map((_,j)=>items.filter(i=>i.s[j]===false).length);
   const ok=items.filter(i=>!gap(i)).length,li=miss.indexOf(Math.max(...miss));
   // hero
-  $('head').textContent=ok===T?'Everything is in sync':`${plats[li]} is missing ${miss[li]} feature${miss[li]>1?'s':''}`;
+  $('head').textContent=ok===T?'Everything is in sync':`${ok} of ${T} features are on every platform`;
   $('sub').textContent=ok===T?`All ${T} features are available on every platform.`
-    :`${ok} of ${T} features (${Math.round(ok/T*100)}%) are on every platform.`+(plats.length>1?' '+plats.map((p,j)=>j===li?'':miss[j]?`${p} is missing ${miss[j]}.`:`${p} has all of them.`).filter(Boolean).join(' '):'');
+    :plats.map((p,j)=>miss[j]?`${p} is missing ${miss[j]}`:`${p} has all ${T}`).join(' · ')+'.';
   $('rings').innerHTML=plats.map((p,j)=>{const pc=has[j]/T,C=2*Math.PI*28;return `<div class="ring"><svg viewBox="0 0 64 64"><circle class="t" cx="32" cy="32" r="28"/><circle class="p" cx="32" cy="32" r="28" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pc)}"/></svg><div><b>${Math.round(pc*100)}%</b><span>${esc(p)} · ${has[j]} of ${T}</span></div></div>`}).join('');
   // breakdown
   const cols=['#ef5b4c','#f0a030','#8b5cf6','#3b82f6'],S=[{k:'ok',label:'On every platform',n:ok,c:'var(--ok)'}],M={};
