@@ -23,7 +23,7 @@ cep-feature-parity
 The live dashboard will then be available at:
 
 ```
-https://<your-github-username>.github.io/cep-feature-parity/
+https://tce-rajs.github.io/cep-feature-parity/
 ```
 
 ---
