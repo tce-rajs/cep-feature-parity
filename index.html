@@ -8,7 +8,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--bg:#f6f6f8;--sf:#fff;--sf2:#f1f1f5;--line:#e8e8ee;--ink:#0f1222;--mute:#6b7080;--ok:#1faa73;--okbg:#e3f6ee;--no:#ef5b4c;--nobg:#fdebe9;--amb:#f0a030;--vio:#8b5cf6;--btn:#0f1222;--btnink:#fff}
-@media(prefers-color-scheme:dark){:root{--bg:#0d0f18;--sf:#151824;--sf2:#1c2030;--line:#262b3d;--ink:#f1f2f7;--mute:#8d93a8;--okbg:#10382b;--nobg:#3b1b1b;--btn:#f1f2f7;--btnink:#0f1222}}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark;--bg:#0d0f18;--sf:#151824;--sf2:#1c2030;--line:#262b3d;--ink:#f1f2f7;--mute:#8d93a8;--okbg:#10382b;--nobg:#3b1b1b;--btn:#f1f2f7;--btnink:#0f1222}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]):not([data-theme=dark]){color-scheme:dark;--bg:#0d0f18;--sf:#151824;--sf2:#1c2030;--line:#262b3d;--ink:#f1f2f7;--mute:#8d93a8;--okbg:#10382b;--nobg:#3b1b1b;--btn:#f1f2f7;--btnink:#0f1222}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit;color:inherit}
@@ -97,6 +99,15 @@ mark{background:#ffe58a;color:#111;border-radius:3px;padding:0 1px}
 .spin{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--ink);border-radius:50%;margin:0 auto 14px;animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
+
+.file::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:7px;vertical-align:1px}
+.file{max-width:360px}
+.theme{display:inline-flex;gap:2px;background:var(--sf2);padding:3px;border-radius:10px}
+.theme button{width:32px;height:28px;border:0;background:none;border-radius:8px;cursor:pointer;color:var(--mute);display:grid;place-items:center;padding:0}
+.theme button.act{background:var(--sf);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.theme svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--btn);color:var(--btnink);padding:10px 18px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:20;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
@@ -116,9 +127,14 @@ mark{background:#ffe58a;color:#111;border-radius:3px;padding:0 1px}
 
 <div id="dash" class="hide">
   <div class="nav"><div class="in"><span class="logo"><i></i><span class="ttl"></span></span><span class="file" id="fname"></span><span class="sp"></span>
+    <div class="theme" id="theme" role="group" aria-label="Theme">
+      <button data-t="light" title="Light" aria-label="Light theme"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+      <button data-t="auto" title="Match my device" aria-label="Match device theme"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>
+      <button data-t="dark" title="Dark" aria-label="Dark theme"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button></div>
     <select id="sheet" class="btn hide" aria-label="Sheet"></select>
     <button class="btn" id="refresh">Refresh data</button></div></div>
   <main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <div id="warn" class="warn hide" role="alert"></div>
     <section class="hero"><div><h1 id="head"></h1><p id="sub"></p></div><div class="rings" id="rings"></div></section>
     <section class="card"><h2>Feature breakdown</h2><div class="sub" id="bsub"></div>
@@ -138,63 +154,126 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const YES=/^(yes|y|true|✓|✔|available)$/i,NO=/^(no|n|false|✗|✘|x|not available)$/i;
 let wb,fname='',stamp=null,D=null,f='all',sec=null,curSheet='';
 
-/* ---- settings: change these two lines if you rename things ---- */
-const CONFIG={file:'CEP_-_Global_Feature_List.xlsx',title:'CEP Feature Parity'};
+/* ---- settings: change these lines if you rename things ---- */
+const CONFIG={
+  file:'CEP_-_Global_Feature_List.xlsx',   // Excel file in the same folder as this page
+  title:'CEP Feature Parity',              // name shown on the page
+  repo:'',                                 // optional "owner/repo". Leave empty to auto-detect on GitHub Pages
+  refreshSeconds:60                        // how often the page checks for a new Excel
+};
 
 document.title=CONFIG.title;
 document.querySelectorAll('.ttl').forEach(e=>e.textContent=CONFIG.title);
 const show=id=>['loading','problem','dash'].forEach(x=>$(x).classList.toggle('hide',x!==id));
 function problem(t,m,showFmt){$('pt').textContent=t;$('pm').textContent=m;$('fmt').classList.toggle('hide',!showFmt);show('problem')}
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),3500)}
+
+/* ---- theme: light / match device / dark (remembered) ---- */
+let theme='auto';try{theme=localStorage.getItem('parity-theme')||'auto'}catch(e){}
+function setTheme(t){
+  theme=t;document.documentElement.dataset.theme=t;try{localStorage.setItem('parity-theme',t)}catch(e){}
+  document.querySelectorAll('#theme button').forEach(b=>{const on=b.dataset.t===t;b.classList.toggle('act',on);b.setAttribute('aria-pressed',on)});
+}
+document.querySelectorAll('#theme button').forEach(b=>b.onclick=()=>setTheme(b.dataset.t));
+setTheme(theme);
+
+/* ---- last updated: GitHub commit time > server time > time saved inside the Excel ---- */
+async function lastUpdated(res){
+  const m=location.hostname.match(/^([^.]+)\.github\.io$/),seg=location.pathname.split('/')[1];
+  const repo=CONFIG.repo||(m&&seg?m[1]+'/'+seg:'');
+  if(repo){
+    try{
+      const r=await fetch(`https://api.github.com/repos/${repo}/commits?path=${encodeURIComponent(CONFIG.file)}&per_page=1`,{cache:'no-store'});
+      if(r.ok){const j=await r.json(),c=j[0]&&j[0].commit,d=c&&(c.committer||c.author||{}).date;if(d)return{date:new Date(d),src:'last commit on GitHub'}}
+    }catch(e){}
+  }
+  const lm=res&&res.headers&&res.headers.get('Last-Modified');
+  return lm?{date:new Date(lm),src:'server'}:null;
+}
+const fmtDate=d=>d.toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true,timeZoneName:'short'});
 
 /* ---- load the Excel that lives next to this page ---- */
-async function loadData(){
-  show('loading');
-  let res;
-  try{res=await fetch(encodeURI(CONFIG.file)+'?t='+Date.now(),{cache:'no-store'})}
-  catch(e){
-    return problem('We couldn’t load the data file',location.protocol==='file:'
-      ?'This page was opened directly from a folder, so the browser blocks reading the Excel file. Open it from your GitHub Pages link instead, or use the button below to pick the file manually.'
-      :'Please check your internet connection and try again.');
-  }
-  if(res.status===404)return problem('Data file not found',`We looked for “${CONFIG.file}” in the same folder as this page. Make sure the file is uploaded with exactly that name, or update the file name in the CONFIG line of index.html.`);
-  if(!res.ok)return problem('We couldn’t load the data file',`The server replied with an error (${res.status}). Please try again in a moment.`);
-  const lm=res.headers.get('Last-Modified');
-  process(await res.arrayBuffer(),CONFIG.file,lm?new Date(lm):null);
+let lastSig=null,busy=false;
+function sig(buf){const u=new Uint8Array(buf);let h=2166136261;for(let i=0;i<u.length;i++)h=Math.imul(h^u[i],16777619);return (h>>>0)+':'+u.length}
+async function loadData(silent,manual){
+  if(busy)return;busy=true;
+  try{
+    if(!silent)show('loading');
+    let res;
+    try{res=await fetch(encodeURI(CONFIG.file)+'?t='+Date.now(),{cache:'no-store'})}
+    catch(e){
+      if(manual)return toast('Couldn’t refresh. Check your connection.');
+      if(silent)return;
+      return problem('We couldn’t load the data file',location.protocol==='file:'
+        ?'This page was opened directly from a folder, so the browser blocks reading the Excel file. Open it from your GitHub Pages link instead, or use the button below to pick the file manually.'
+        :'Please check your internet connection and try again.');
+    }
+    if(!res.ok){
+      if(manual)return toast('Couldn’t refresh. Please try again.');
+      if(silent)return;
+      return res.status===404
+        ?problem('Data file not found',`We looked for “${CONFIG.file}” in the same folder as this page. Make sure the file is uploaded with exactly that name, or update the file name in the CONFIG section of index.html.`)
+        :problem('We couldn’t load the data file',`The server replied with an error (${res.status}). Please try again in a moment.`);
+    }
+    const buf=await res.arrayBuffer(),s=sig(buf);
+    if(silent&&s===lastSig){if(manual)toast('Already up to date');return}
+    const changed=silent&&lastSig!==null&&!$('dash').classList.contains('hide');
+    lastSig=s;
+    const when=await lastUpdated(res);
+    const ok=process(buf,CONFIG.file,when,changed);
+    if(ok&&changed)toast('Excel changed. Dashboard updated.');
+    else if(ok&&manual)toast('Dashboard refreshed');
+  }finally{busy=false}
 }
+setInterval(()=>{if(!document.hidden&&$('loading').classList.contains('hide'))loadData(true)},CONFIG.refreshSeconds*1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('loading').classList.contains('hide'))loadData(true)});
 
 /* ---- manual fallback (useful for local preview) ---- */
 $('pick').onclick=()=>$('file').click();
 $('file').onchange=e=>{
   const fl=e.target.files[0];if(!fl)return;
-  const r=new FileReader();r.onload=x=>process(x.target.result,fl.name,fl.lastModified?new Date(fl.lastModified):null);
+  const r=new FileReader();r.onload=x=>process(x.target.result,fl.name,fl.lastModified?{date:new Date(fl.lastModified),src:'file on your computer'}:null,false);
   r.onerror=()=>problem('We couldn’t read this file','Please try again or choose a different file.');r.readAsArrayBuffer(fl);e.target.value='';
 };
-$('retry').onclick=loadData;$('refresh').onclick=loadData;
+$('retry').onclick=()=>loadData(false);
+$('refresh').onclick=()=>loadData(true,true);
 
-function process(buf,name,when){
-  if(typeof XLSX==='undefined')return problem('The Excel reader didn’t load','Check your internet connection and refresh the page.');
+function process(buf,name,when,keep){
+  if(typeof XLSX==='undefined'){problem('The Excel reader didn’t load','Check your internet connection and refresh the page.');return false}
   try{wb=XLSX.read(buf,{type:'array'})}
-  catch(x){return problem('We couldn’t open the data file','It may be damaged or password protected. Re-save it as .xlsx and upload it again.')}
-  fname=name;stamp=when;
+  catch(x){problem('We couldn’t open the data file','It may be damaged or password protected. Re-save it as .xlsx and upload it again.');return false}
+  fname=name;
+  stamp=when||((wb.Props&&wb.Props.ModifiedDate)?{date:new Date(wb.Props.ModifiedDate),src:'time saved inside the Excel'}:null);
+  const order=keep&&wb.SheetNames.includes(curSheet)?[curSheet,...wb.SheetNames.filter(n=>n!==curSheet)]:wb.SheetNames;
   let first=null;
-  for(const n of wb.SheetNames){const res=parse(n);if(res.D){start(n,res.D);return}first=first||res}
+  for(const n of order){const res=parse(n);if(res.D){start(n,res.D,keep);return true}first=first||res}
   const x=first||{err:'empty'},many=wb.SheetNames.length>1?` We checked all ${wb.SheetNames.length} sheets.`:'';
   if(x.err==='noPlat')problem('This doesn’t look like a feature comparison sheet',`We look for columns that contain Yes / No values, one per platform. The columns we found were: ${x.cols.slice(0,6).join(', ')||'none'}${x.cols.length>6?'…':''}, and none of them hold Yes / No values.${many}`,true);
   else if(x.err==='noName')problem('Feature names are missing','We found Yes / No columns, but no column with feature names. Add a column such as “Feature” and try again.',true);
   else problem('The data sheet looks empty','We need a header row and at least one feature row.'+many,true);
+  return false;
 }
 function parse(name){
   const aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''}).filter(r=>r.some(v=>String(v).trim()!==''));
   const res=build(aoa);return res.err?res:{D:res};
 }
-function start(name,d){
+function stampText(){
+  $('fname').textContent=stamp&&!isNaN(stamp.date)?'Updated '+fmtDate(stamp.date):fname;
+  $('fname').title=`${fname}${stamp?' · source: '+stamp.src:''} · checks for changes every ${CONFIG.refreshSeconds} seconds`;
+}
+function start(name,d,keep){
+  const prev=keep?{f,sec,q:$('q').value,mode:$('mode').value}:null;
   D=d;curSheet=name;f='all';sec=null;$('q').value='';$('warn').classList.add('hide');
   $('sheet').innerHTML=wb.SheetNames.map(n=>`<option ${n===name?'selected':''}>${esc(n)}</option>`).join('');
   $('sheet').classList.toggle('hide',wb.SheetNames.length<2);
-  $('fname').textContent=stamp&&!isNaN(stamp)?`Updated ${stamp.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`:fname;
-  $('fname').title=fname;
+  stampText();
   $('mode').innerHTML='<option value="">All modes</option>'+D.modes.map(m=>`<option>${esc(m)}</option>`).join('');
-  show('dash');window.scrollTo(0,0);render();
+  if(prev){
+    const okF=/^miss(\d+)$/.test(prev.f)?+prev.f.slice(4)<D.plats.length:prev.f.startsWith('set:')?D.items.some(i=>'set:'+sk(i)===prev.f):true;
+    f=okF?prev.f:'all';sec=prev.sec&&D.items.some(i=>i.key===prev.sec)?prev.sec:null;
+    $('q').value=prev.q;$('mode').value=D.modes.includes(prev.mode)?prev.mode:'';
+  }
+  show('dash');if(!keep)window.scrollTo(0,0);render();
 }
 $('sheet').onchange=e=>{
   const res=parse(e.target.value);
